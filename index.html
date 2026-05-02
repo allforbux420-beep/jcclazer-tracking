@@ -6,47 +6,52 @@
 
 <style>
 body {
-    background: radial-gradient(circle at top, #1a1a1a, #200);
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background: radial-gradient(circle at top, #1a1a1a, #000);
+    font-family: Arial, sans-serif;
+    color:#fff;
 }
 
-/* Card */
 .card {
-    background: #0f0f0f;
+    width:380px;
+    padding:40px 30px;
+    border-radius:20px;
+    background:#0f0f0f;
     border:1px solid rgba(255,255,255,0.05);
     box-shadow: 0 0 60px rgba(255,80,0,0.25);
+    transition:0.4s;
 }
 
-/* progress + button */
-.progress, button {
-    background: linear-gradient(90deg,#ff3c00,#ff7a00);
-    box-shadow: 0 0 20px rgba(255,60,0,0.6);
+.delivered {
+    animation: glowPulse 1.5s ease-in-out infinite alternate;
+}
+@keyframes glowPulse {
+    from { box-shadow: 0 0 10px rgba(0,255,150,0.3); }
+    to { box-shadow: 0 0 30px rgba(0,255,150,0.9); }
 }
 
-/* Timer */
-.timer {
-    color:#ff3c00;
+.delivered-text {
+    color:#00ff9c !important;
+    font-weight:600;
 }
-.message {
-    margin-top:10px;
-    font-size:14px;
-    color:#ffffff;
+
+.progress-full {
+    width:100% !important;
+}
+
+.card h2 {
     text-align:center;
 }
-
-/* Title */
-.card h2 {
-    letter-spacing:2px;
-    font-weight:600;
-    margin-bottom:5px;
-}
-
 .sub {
+    text-align:center;
     color:#888;
-    font-size:13px;
     margin-bottom:20px;
 }
 
-/* Input */
 #searchBox {
     width:100%;
     padding:14px;
@@ -54,54 +59,27 @@ body {
     border:1px solid #222;
     background:#0a0a0a;
     color:#fff;
-    font-size:14px;
-    outline:none;
-    margin-bottom:12px;
-    transition:0.3s;
+    margin-bottom:10px;
 }
 
-#searchBox:focus {
-    border:1px solid #ff3c00;
-    box-shadow:0 0 10px rgba(255,60,0,0.4);
-}
-
-/* Button */
 button {
     width:100%;
     padding:14px;
-    margin-top:10px;
     border:none;
     border-radius:10px;
     background:linear-gradient(90deg,#ff3c00,#ff7a00);
     color:#fff;
-    font-weight:600;
     cursor:pointer;
-    transition:0.3s;
 }
 
-button:hover {
-    transform:scale(1.03);
-    box-shadow:0 0 35px rgba(255,80,0,0.9);
-}
-
-/* Name */
-#content p {
-    color:#fff;          /* 🔥 THIS FIXES IT */
-    font-size:20px;
-    margin:20px 0 5px;
-}
-
-/* Status row */
 .statusRow {
     display:flex;
     justify-content:center;
-    align-items:center;
     gap:8px;
+    margin-top:15px;
     color:#aaa;
-    margin-bottom:10px;
 }
 
-/* Progress bar */
 .bar {
     background:#1a1a1a;
     height:10px;
@@ -109,23 +87,23 @@ button:hover {
     overflow:hidden;
     margin:20px 0;
 }
-
 .progress {
     height:100%;
     width:0%;
     background:linear-gradient(90deg,#ff3c00,#ff7a00);
-    box-shadow:0 0 20px rgba(255,60,0,0.7);
-    transition:width 1.2s ease;
+    transition:width 1s;
 }
 
-/* Countdown */
 .timer {
-    font-size:18px;
+    text-align:center;
     color:#ff3c00;
-    letter-spacing:1px;
 }
 
-/* Loader */
+.message {
+    text-align:center;
+    margin-top:10px;
+}
+
 .loader {
     border:3px solid #222;
     border-top:3px solid #ff3c00;
@@ -144,113 +122,54 @@ button:hover {
 
 <body>
 
-<div class="wrapper">
-
 <div class="card">
 
-    <h2>JCC LAZER</h2>
-    <div class="sub">Order Tracking</div>
+<h2>JCC LAZER</h2>
+<div class="sub">Order Tracking</div>
 
-    <input id="searchBox" placeholder="Enter Order ID">
-    
-    <div id="content">
-        <div class="loader"></div>
-    </div>
+<input id="searchBox" placeholder="Enter Order ID">
+<button onclick="searchOrder()">Track Order</button>
 
-    <div class="statusRow">
-        <span id="statusIcon"></span>
-        <span id="statusText"></span>
-    </div>
+<div id="content"><div class="loader"></div></div>
 
-  <div class="bar">
-    <div class="progress" id="progressBar"></div>
+<div class="statusRow">
+<span id="statusIcon"></span>
+<span id="statusText"></span>
+</div>
+
+<div class="bar">
+<div class="progress" id="progressBar"></div>
 </div>
 
 <div class="timer" id="countdown"></div>
 
 <div id="message" class="message">
-    Out the door before this timer ends!
+Out the door before this timer ends!
 </div>
 
-</div>   <!-- closes .wrapper -->
+</div>
 
 <script>
 
 const sheetURL = "https://api.sheetbest.com/sheets/7aac2704-6e80-426e-b461-4dcda49f0f3c";
 
-// get order id
-const params = new URLSearchParams(window.location.search);
-const orderID = params.get("order");
-
-// countdown
-let deliveryTime = new Date().getTime() + (14*24*60*60*1000);
-
-setInterval(()=>{
-    let now = new Date().getTime();
-    let distance = deliveryTime - now;
-
-    let d = Math.floor(distance/(1000*60*60*24));
-    let h = Math.floor((distance%(1000*60*60*24))/(1000*60*60));
-    let m = Math.floor((distance%(1000*60*60))/(1000*60));
-    let s = Math.floor((distance%(1000*60))/1000);
-
-    document.getElementById("countdown").innerHTML =
-        d+"d "+h+"h "+m+"m "+s+"s";
-},1000);
-
-
-// load order
-async function loadOrder(){
-
-    const res = await fetch(sheetURL);
-    const data = await res.json();
-
-   const found = data.find(row => row["OrderID"] === orderID);
-
-    if(!found){
-        document.getElementById("content").innerHTML = "Order not found";
-        return;
-    }
-
-    const statuses = [
-    {text:"Order Received", icon:"📦"},
-    {text:"Engraving", icon:"⚙️"},
-    {text:"Finishing", icon:"✨"},
-    {text:"Shipped", icon:"🚚"},
-    {text:"Delivered", icon:"✔"}
-];
-
-    document.getElementById("content").innerHTML =
-        "<p>"+found.Name+"</p>";
-
-    const stageIndex = parseInt(found.Stage) - 1;
-const current = statuses[stageIndex];
-
-document.getElementById("statusText").innerHTML = current.text;
-document.getElementById("statusIcon").innerHTML = current.icon;
-
-  document.getElementById("progressBar").style.width =
-    ((stageIndex)/(statuses.length-1))*100 + "%";
-}
-if (orderID) {
-    loadOrder();
-} else {
-    document.getElementById("content").innerHTML = "Enter your Order ID above";
-}
-
-async function loadOrderById(id){
+async function loadOrder(id){
 
     document.getElementById("content").innerHTML = '<div class="loader"></div>';
 
     const res = await fetch(sheetURL);
     const data = await res.json();
 
-    const found = data.find(row => row["OrderID"] === id);
+    const found = data.find(row =>
+        row["OrderID"]?.toUpperCase().trim() === id.toUpperCase().trim()
+    );
 
     if(!found){
         document.getElementById("content").innerHTML = "Order not found";
         return;
     }
+
+    document.getElementById("content").innerHTML = "<p>"+found.Name+"</p>";
 
     const statuses = [
         {text:"Order Received", icon:"📦"},
@@ -260,10 +179,7 @@ async function loadOrderById(id){
         {text:"Delivered", icon:"✔"}
     ];
 
-    document.getElementById("content").innerHTML =
-        "<p>"+found.Name+"</p>";
-
-    const stageIndex = Math.max(0, Math.min(parseInt(found.Stage) - 1, statuses.length - 1));
+    const stageIndex = parseInt(found.Stage) - 1;
     const current = statuses[stageIndex];
 
     document.getElementById("statusText").innerHTML = current.text;
@@ -271,27 +187,55 @@ async function loadOrderById(id){
 
     document.getElementById("progressBar").style.width =
         ((stageIndex)/(statuses.length-1))*100 + "%";
+
+    const orderDate = new Date(found.OrderDate);
+    let deliveryTime = orderDate.getTime() + (14*24*60*60*1000);
+
+    if (window.timer) clearInterval(window.timer);
+
+    window.timer = setInterval(()=>{
+        let now = new Date().getTime();
+        let distance = deliveryTime - now;
+
+        if (distance <= 0) {
+
+            document.getElementById("countdown").innerHTML = "Delivered";
+            document.getElementById("statusText").innerHTML = "Delivered";
+            document.getElementById("statusIcon").innerHTML = "✔";
+
+            document.getElementById("progressBar").classList.add("progress-full");
+            document.querySelector(".card").classList.add("delivered");
+
+            document.getElementById("message").innerHTML =
+                "Your order has been delivered 🎉";
+
+            document.getElementById("statusText").classList.add("delivered-text");
+
+            clearInterval(window.timer);
+            return;
+        }
+
+        let d = Math.floor(distance/(1000*60*60*24));
+        let h = Math.floor((distance%(1000*60*60*24))/(1000*60*60));
+        let m = Math.floor((distance%(1000*60*60))/(1000*60));
+        let s = Math.floor((distance%(1000*60))/1000);
+
+        document.getElementById("countdown").innerHTML =
+            d+"d "+h+"h "+m+"m "+s+"s";
+
+    },1000);
 }
 
-let typingTimer;
-const delay = 500;
+function searchOrder(){
+    const id = document.getElementById("searchBox").value.trim();
+    if(id.length > 0) loadOrder(id);
+}
 
-document.getElementById("searchBox").addEventListener("input", function () {
-
-    this.value = this.value.toUpperCase();
-
-    clearTimeout(typingTimer);
-
-    typingTimer = setTimeout(() => {
-        const id = this.value.trim();
-
-        if (id.length > 3) {
-            loadOrderById(id);
-        }
-    }, delay);
+document.getElementById("searchBox").addEventListener("keypress", function(e){
+    if(e.key === "Enter"){
+        searchOrder();
+    }
 });
-console.log("Searching for:", id);
-console.log(data);
 
 </script>
 
